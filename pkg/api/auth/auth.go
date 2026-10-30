@@ -3,18 +3,18 @@ package auth
 import (
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 )
 
 // Custom errors
 var (
-	ErrInvalidCredentials = echo.NewHTTPError(http.StatusUnauthorized, "Username or password does not exist")
+	ErrInvalidCredentials = fiber.NewError(http.StatusUnauthorized, "Username or password does not exist")
 )
 
 // Authenticate tries to authenticate the user provided by username and password
-func (a Auth) Authenticate(c echo.Context, user, pass string) (gorsk.AuthToken, error) {
+func (a Auth) Authenticate(c *fiber.Ctx, user, pass string) (gorsk.AuthToken, error) {
 	u, err := a.udb.FindByUsername(a.db, user)
 	if err != nil {
 		return gorsk.AuthToken{}, err
@@ -43,7 +43,7 @@ func (a Auth) Authenticate(c echo.Context, user, pass string) (gorsk.AuthToken, 
 }
 
 // Refresh refreshes jwt token and puts new claims inside
-func (a Auth) Refresh(c echo.Context, refreshToken string) (string, error) {
+func (a Auth) Refresh(c *fiber.Ctx, refreshToken string) (string, error) {
 	user, err := a.udb.FindByToken(a.db, refreshToken)
 	if err != nil {
 		return "", err
@@ -52,7 +52,7 @@ func (a Auth) Refresh(c echo.Context, refreshToken string) (string, error) {
 }
 
 // Me returns info about currently logged user
-func (a Auth) Me(c echo.Context) (gorsk.User, error) {
+func (a Auth) Me(c *fiber.Ctx) (gorsk.User, error) {
 	au := a.rbac.User(c)
 	return a.udb.View(a.db, au.ID)
 }

@@ -2,12 +2,10 @@ package server_test
 
 import (
 	"bytes"
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-playground/validator"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 	"github.com/ribice/gorsk/pkg/utl/server"
 	"github.com/stretchr/testify/assert"
 )
@@ -43,17 +41,21 @@ func TestBind(t *testing.T) {
 	b := server.NewBinder()
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "", bytes.NewBufferString(tt.req))
+			req := httptest.NewRequest("POST", "/", bytes.NewBufferString(tt.req))
 			req.Header.Set("Content-Type", "application/json")
-			e := echo.New()
-			e.Validator = &server.CustomValidator{V: validator.New()}
-			e.Binder = server.NewBinder()
-			c := e.NewContext(req, w)
-			r := new(Req)
-			err := b.Bind(r, c)
-			assert.Equal(t, tt.wantData, r)
-			assert.Equal(t, tt.wantErr, err != nil)
+			app := fiber.New()
+			app.Post("/", func(c *fiber.Ctx) error {
+				r := new(Req)
+				err := b.Bind(r, c)
+				assert.Equal(t, tt.wantData, r)
+				assert.Equal(t, tt.wantErr, err != nil)
+				return nil
+			})
+			res, err := app.Test(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, fiber.StatusOK, res.StatusCode)
 		})
 	}
 

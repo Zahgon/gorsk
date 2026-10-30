@@ -16,7 +16,7 @@ import (
 	"github.com/ribice/gorsk/pkg/utl/server"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,8 +44,8 @@ func TestCreate(t *testing.T) {
 			name: "Fail on invalid role",
 			req:  `{"first_name":"John","last_name":"Doe","username":"juzernejm","password":"hunter123","password_confirm":"hunter123","email":"johndoe@gmail.com","company_id":1,"location_id":2,"role_id":50}`,
 			rbac: &mock.RBAC{
-				AccountCreateFn: func(c echo.Context, roleID gorsk.AccessRole, companyID, locationID int) error {
-					return echo.ErrForbidden
+				AccountCreateFn: func(c *fiber.Ctx, roleID gorsk.AccessRole, companyID, locationID int) error {
+					return fiber.ErrForbidden
 				},
 			},
 			wantStatus: http.StatusBadRequest,
@@ -54,8 +54,8 @@ func TestCreate(t *testing.T) {
 			name: "Fail on RBAC",
 			req:  `{"first_name":"John","last_name":"Doe","username":"juzernejm","password":"hunter123","password_confirm":"hunter123","email":"johndoe@gmail.com","company_id":1,"location_id":2,"role_id":200}`,
 			rbac: &mock.RBAC{
-				AccountCreateFn: func(c echo.Context, roleID gorsk.AccessRole, companyID, locationID int) error {
-					return echo.ErrForbidden
+				AccountCreateFn: func(c *fiber.Ctx, roleID gorsk.AccessRole, companyID, locationID int) error {
+					return fiber.ErrForbidden
 				},
 			},
 			wantStatus: http.StatusForbidden,
@@ -65,7 +65,7 @@ func TestCreate(t *testing.T) {
 			name: "Success",
 			req:  `{"first_name":"John","last_name":"Doe","username":"juzernejm","password":"hunter123","password_confirm":"hunter123","email":"johndoe@gmail.com","company_id":1,"location_id":2,"role_id":200}`,
 			rbac: &mock.RBAC{
-				AccountCreateFn: func(c echo.Context, roleID gorsk.AccessRole, companyID, locationID int) error {
+				AccountCreateFn: func(c *fiber.Ctx, roleID gorsk.AccessRole, companyID, locationID int) error {
 					return nil
 				},
 			},
@@ -101,13 +101,13 @@ func TestCreate(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/users"
-			res, err := http.Post(path, "application/json", bytes.NewBufferString(tt.req))
+			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/users"
+			req := httptest.NewRequest("POST", path, bytes.NewBufferString(tt.req))
+			req.Header.Set("Content-Type", "application/json")
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -147,7 +147,7 @@ func TestList(t *testing.T) {
 			name: "Fail on query list",
 			req:  `?limit=100&page=1`,
 			rbac: &mock.RBAC{
-				UserFn: func(c echo.Context) gorsk.AuthUser {
+				UserFn: func(c *fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{
 						ID:         1,
 						CompanyID:  2,
@@ -162,7 +162,7 @@ func TestList(t *testing.T) {
 			name: "Success",
 			req:  `?limit=100&page=1`,
 			rbac: &mock.RBAC{
-				UserFn: func(c echo.Context) gorsk.AuthUser {
+				UserFn: func(c *fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{
 						ID:         1,
 						CompanyID:  2,
@@ -257,13 +257,11 @@ func TestList(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/users" + tt.req
-			res, err := http.Get(path)
+			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/users" + tt.req
+			res, err := r.Test(httptest.NewRequest("GET", path, nil), -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -299,8 +297,8 @@ func TestView(t *testing.T) {
 			name: "Fail on RBAC",
 			req:  `1`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(echo.Context, int) error {
-					return echo.ErrForbidden
+				EnforceUserFn: func(*fiber.Ctx, int) error {
+					return fiber.ErrForbidden
 				},
 			},
 			wantStatus: http.StatusForbidden,
@@ -309,7 +307,7 @@ func TestView(t *testing.T) {
 			name: "Success",
 			req:  `1`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(echo.Context, int) error {
+				EnforceUserFn: func(*fiber.Ctx, int) error {
 					return nil
 				},
 			},
@@ -343,13 +341,11 @@ func TestView(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/users/" + tt.req
-			res, err := http.Get(path)
+			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/users/" + tt.req
+			res, err := r.Test(httptest.NewRequest("GET", path, nil), -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -393,8 +389,8 @@ func TestUpdate(t *testing.T) {
 			id:   `1`,
 			req:  `{"first_name":"jj","last_name":"okocha","mobile":"123456","phone":"321321","address":"home"}`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(echo.Context, int) error {
-					return echo.ErrForbidden
+				EnforceUserFn: func(*fiber.Ctx, int) error {
+					return fiber.ErrForbidden
 				},
 			},
 			wantStatus: http.StatusForbidden,
@@ -404,7 +400,7 @@ func TestUpdate(t *testing.T) {
 			id:   `1`,
 			req:  `{"first_name":"jj","last_name":"okocha","phone":"321321","address":"home"}`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(echo.Context, int) error {
+				EnforceUserFn: func(*fiber.Ctx, int) error {
 					return nil
 				},
 			},
@@ -447,19 +443,15 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 
-	client := http.Client{}
-
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/users/" + tt.id
-			req, _ := http.NewRequest("PATCH", path, bytes.NewBufferString(tt.req))
+			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/users/" + tt.id
+			req := httptest.NewRequest("PATCH", path, bytes.NewBufferString(tt.req))
 			req.Header.Set("Content-Type", "application/json")
-			res, err := client.Do(req)
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -503,8 +495,8 @@ func TestDelete(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				IsLowerRoleFn: func(echo.Context, gorsk.AccessRole) error {
-					return echo.ErrForbidden
+				IsLowerRoleFn: func(*fiber.Ctx, gorsk.AccessRole) error {
+					return fiber.ErrForbidden
 				},
 			},
 			wantStatus: http.StatusForbidden,
@@ -525,7 +517,7 @@ func TestDelete(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				IsLowerRoleFn: func(echo.Context, gorsk.AccessRole) error {
+				IsLowerRoleFn: func(*fiber.Ctx, gorsk.AccessRole) error {
 					return nil
 				},
 			},
@@ -533,18 +525,14 @@ func TestDelete(t *testing.T) {
 		},
 	}
 
-	client := http.Client{}
-
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/users/" + tt.id
-			req, _ := http.NewRequest("DELETE", path, nil)
-			res, err := client.Do(req)
+			transport.NewHTTP(user.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/users/" + tt.id
+			req := httptest.NewRequest("DELETE", path, nil)
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -552,4 +540,9 @@ func TestDelete(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, res.StatusCode)
 		})
 	}
+}
+
+// next lets the requests through to the handlers without authentication
+func next(c *fiber.Ctx) error {
+	return c.Next()
 }

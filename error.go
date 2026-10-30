@@ -3,7 +3,7 @@ package gorsk
 import (
 	"errors"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 var (
@@ -11,8 +11,8 @@ var (
 	ErrGeneric = errors.New("generic error")
 
 	// ErrBadRequest (400) is returned for bad request (validation)
-	ErrBadRequest = echo.NewHTTPError(400)
+	ErrBadRequest = fiber.NewError(400)
 
 	// ErrUnauthorized (401) is returned when user is not authorized
-	ErrUnauthorized = echo.ErrUnauthorized
+	ErrUnauthorized = fiber.ErrUnauthorized
 )

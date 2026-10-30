@@ -1,10 +1,10 @@
 package mock
 
 import (
-	"net/http/httptest"
 	"time"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
+	"github.com/valyala/fasthttp"
 )
 
 // TestTime is used for testing time fields
@@ -17,13 +17,12 @@ func HeaderValid() string {
 	return "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidSI6ImpvaG5kb2UiLCJlIjoiam9obmRvZUBtYWlsLmNvbSIsInIiOjEsImMiOjEsImwiOjEsImV4cCI6NDEwOTMyMDg5NCwiaWF0IjoxNTE2MjM5MDIyfQ.FZYfTeKNulzfMM6IMSOHJKokgFACtL_e-MW7HOLLm1k"
 }
 
-// EchoCtxWithKeys returns new Echo context with keys
-func EchoCtxWithKeys(keys []string, values ...interface{}) echo.Context {
-	e := echo.New()
-	w := httptest.NewRecorder()
-	c := e.NewContext(nil, w)
+// FiberCtxWithKeys returns new Fiber context with keys
+func FiberCtxWithKeys(keys []string, values ...interface{}) *fiber.Ctx {
+	app := fiber.New()
+	c := app.AcquireCtx(&fasthttp.RequestCtx{})
 	for i, k := range keys {
-		c.Set(k, values[i])
+		c.Locals(k, values[i])
 	}
 	return c
 }

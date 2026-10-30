@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/auth"
@@ -174,7 +174,7 @@ func TestAuthenticate(t *testing.T) {
 }
 func TestRefresh(t *testing.T) {
 	type args struct {
-		c     echo.Context
+		c     *fiber.Ctx
 		token string
 	}
 	cases := []struct {
@@ -257,7 +257,7 @@ func TestMe(t *testing.T) {
 		{
 			name: "Success",
 			rbac: &mock.RBAC{
-				UserFn: func(echo.Context) gorsk.AuthUser {
+				UserFn: func(*fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{ID: 9}
 				},
 			},

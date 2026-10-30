@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/auth"
@@ -81,12 +81,12 @@ func TestLogin(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			transport.NewHTTP(auth.New(nil, tt.udb, tt.jwt, tt.sec, nil), r, nil)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/login"
-			res, err := http.Post(path, "application/json", bytes.NewBufferString(tt.req))
+			path := "/login"
+			req := httptest.NewRequest("POST", path, bytes.NewBufferString(tt.req))
+			req.Header.Set("Content-Type", "application/json")
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -146,12 +146,10 @@ func TestRefresh(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			transport.NewHTTP(auth.New(nil, tt.udb, tt.jwt, nil, nil), r, nil)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/refresh/" + tt.req
-			res, err := http.Get(path)
+			path := "/refresh/" + tt.req
+			res, err := r.Test(httptest.NewRequest("GET", path, nil), -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -186,7 +184,7 @@ func TestMe(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				UserFn: func(echo.Context) gorsk.AuthUser {
+				UserFn: func(*fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{ID: 1}
 				},
 			},
@@ -210,7 +208,7 @@ func TestMe(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				UserFn: func(echo.Context) gorsk.AuthUser {
+				UserFn: func(*fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{ID: 1}
 				},
 			},
@@ -228,7 +226,6 @@ func TestMe(t *testing.T) {
 		},
 	}
 
-	client := &http.Client{}
 	jwt, err := jwt.New("HS256", "jwtsecret123", 60, 4)
 	if err != nil {
 		t.Fatal(err)
@@ -236,17 +233,12 @@ func TestMe(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			transport.NewHTTP(auth.New(nil, tt.udb, nil, nil, tt.rbac), r, authMw.Middleware(jwt))
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/me"
-			req, err := http.NewRequest("GET", path, nil)
+			path := "/me"
+			req := httptest.NewRequest("GET", path, nil)
 			req.Header.Set("Authorization", tt.header)
-			if err != nil {
-				t.Fatal(err)
-			}
-			res, err := client.Do(req)
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}

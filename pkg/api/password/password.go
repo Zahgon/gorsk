@@ -3,17 +3,17 @@ package password
 import (
 	"net/http"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Custom errors
 var (
-	ErrIncorrectPassword = echo.NewHTTPError(http.StatusBadRequest, "incorrect old password")
-	ErrInsecurePassword  = echo.NewHTTPError(http.StatusBadRequest, "insecure password")
+	ErrIncorrectPassword = fiber.NewError(http.StatusBadRequest, "incorrect old password")
+	ErrInsecurePassword  = fiber.NewError(http.StatusBadRequest, "insecure password")
 )
 
 // Change changes user's password
-func (p Password) Change(c echo.Context, userID int, oldPass, newPass string) error {
+func (p Password) Change(c *fiber.Ctx, userID int, oldPass, newPass string) error {
 	if err := p.rbac.EnforceUser(c, userID); err != nil {
 		return err
 	}

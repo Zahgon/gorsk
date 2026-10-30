@@ -2,14 +2,14 @@
 package user
 
 import (
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/utl/query"
 )
 
 // Create creates a new user account
-func (u User) Create(c echo.Context, req gorsk.User) (gorsk.User, error) {
+func (u User) Create(c *fiber.Ctx, req gorsk.User) (gorsk.User, error) {
 	if err := u.rbac.AccountCreate(c, req.RoleID, req.CompanyID, req.LocationID); err != nil {
 		return gorsk.User{}, err
 	}
@@ -18,7 +18,7 @@ func (u User) Create(c echo.Context, req gorsk.User) (gorsk.User, error) {
 }
 
 // List returns list of users
-func (u User) List(c echo.Context, p gorsk.Pagination) ([]gorsk.User, error) {
+func (u User) List(c *fiber.Ctx, p gorsk.Pagination) ([]gorsk.User, error) {
 	au := u.rbac.User(c)
 	q, err := query.List(au)
 	if err != nil {
@@ -28,7 +28,7 @@ func (u User) List(c echo.Context, p gorsk.Pagination) ([]gorsk.User, error) {
 }
 
 // View returns single user
-func (u User) View(c echo.Context, id int) (gorsk.User, error) {
+func (u User) View(c *fiber.Ctx, id int) (gorsk.User, error) {
 	if err := u.rbac.EnforceUser(c, id); err != nil {
 		return gorsk.User{}, err
 	}
@@ -36,7 +36,7 @@ func (u User) View(c echo.Context, id int) (gorsk.User, error) {
 }
 
 // Delete deletes a user
-func (u User) Delete(c echo.Context, id int) error {
+func (u User) Delete(c *fiber.Ctx, id int) error {
 	user, err := u.udb.View(u.db, id)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ type Update struct {
 }
 
 // Update updates user's contact information
-func (u User) Update(c echo.Context, r Update) (gorsk.User, error) {
+func (u User) Update(c *fiber.Ctx, r Update) (gorsk.User, error) {
 	if err := u.rbac.EnforceUser(c, r.ID); err != nil {
 		return gorsk.User{}, err
 	}

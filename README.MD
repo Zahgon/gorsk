@@ -33,7 +33,7 @@ The following dependencies are used in this project (generated using [Glice](htt
 |-------------------------------------|--------------------------------------------|--------------|
 |             DEPENDENCY              |                  REPOURL                   |   LICENSE    |
 |-------------------------------------|--------------------------------------------|--------------|
-| github.com/labstack/echo            | https://github.com/labstack/echo           | MIT          |
+| github.com/gofiber/fiber/v2         | https://github.com/gofiber/fiber           | MIT          |
 | github.com/go-pg/pg                 | https://github.com/go-pg/pg                | bsd-2-clause |
 | github.com/dgrijalva/jwt-go         | https://github.com/dgrijalva/jwt-go        | MIT          |
 | github.com/rs/zerolog               | https://github.com/rs/zerolog              | MIT          |
@@ -47,7 +47,7 @@ The following dependencies are used in this project (generated using [Glice](htt
 |-------------------------------------|--------------------------------------------|--------------|
 ```
 
-1. Echo - HTTP 'framework'.
+1. Fiber - HTTP 'framework'.
 2. Go-Pg - PostgreSQL ORM
 3. JWT-Go - JWT Authentication
 4. Zerolog - Structured logging

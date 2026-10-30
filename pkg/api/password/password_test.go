@@ -7,7 +7,7 @@ import (
 	"github.com/ribice/gorsk/pkg/api/password"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk/pkg/utl/mock"
 	"github.com/ribice/gorsk/pkg/utl/mock/mockdb"
@@ -33,7 +33,7 @@ func TestChange(t *testing.T) {
 			name: "Fail on EnforceUser",
 			args: args{id: 1},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return gorsk.ErrGeneric
 				}},
 			wantErr: true,
@@ -43,7 +43,7 @@ func TestChange(t *testing.T) {
 			args:    args{id: 1},
 			wantErr: true,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			udb: &mockdb.User{
@@ -59,7 +59,7 @@ func TestChange(t *testing.T) {
 			name: "Fail on PasswordMatch",
 			args: args{id: 1, oldpass: "hunter123"},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			wantErr: true,
@@ -80,7 +80,7 @@ func TestChange(t *testing.T) {
 			name: "Fail on InsecurePassword",
 			args: args{id: 1, oldpass: "hunter123"},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			wantErr: true,
@@ -104,7 +104,7 @@ func TestChange(t *testing.T) {
 			name: "Success",
 			args: args{id: 1, oldpass: "hunter123", newpass: "password"},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			udb: &mockdb.User{

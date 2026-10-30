@@ -1,9 +1,10 @@
 package zlog
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/rs/zerolog"
 )
@@ -22,7 +23,7 @@ func New() *Log {
 }
 
 // Log logs using zerolog
-func (z *Log) Log(ctx echo.Context, source, msg string, err error, params map[string]interface{}) {
+func (z *Log) Log(ctx *fiber.Ctx, source, msg string, err error, params map[string]interface{}) {
 
 	if params == nil {
 		params = make(map[string]interface{})
@@ -30,13 +31,16 @@ func (z *Log) Log(ctx echo.Context, source, msg string, err error, params map[st
 
 	params["source"] = source
 
-	if id, ok := ctx.Get("id").(int); ok {
+	if id, ok := ctx.Locals("id").(int); ok {
 		params["id"] = id
-		params["user"] = ctx.Get("username").(string)
+		params["user"] = ctx.Locals("username").(string)
 	}
 
 	if err != nil {
 		params["error"] = err
+		if e, ok := err.(*fiber.Error); ok {
+			params["error"] = fmt.Sprintf("code=%d, message=%s", e.Code, e.Message)
+		}
 		z.logger.Error().Fields(params).Msg(msg)
 		return
 	}

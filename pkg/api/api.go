@@ -72,25 +72,30 @@ func Start(cfg *config.Configuration) error {
 
 	log := zlog.New()
 
-	e := server.New()
-	e.Static("/swaggerui", cfg.App.SwaggerUIPath)
+	srvCfg := &server.Config{
+		Port:                cfg.Server.Port,
+		ReadTimeoutSeconds:  cfg.Server.ReadTimeout,
+		WriteTimeoutSeconds: cfg.Server.WriteTimeout,
+		Debug:               cfg.Server.Debug,
+	}
+
+	e := server.New(srvCfg)
+	server.Static(e, "/swaggerui", cfg.App.SwaggerUIPath)
 
 	authMiddleware := authMw.Middleware(jwt)
 
 	at.NewHTTP(al.New(auth.Initialize(db, jwt, sec, rbac), log), e, authMiddleware)
 
 	v1 := e.Group("/v1")
-	v1.Use(authMiddleware)
 
-	ut.NewHTTP(ul.New(user.Initialize(db, rbac, sec), log), v1)
-	pt.NewHTTP(pl.New(password.Initialize(db, rbac, sec), log), v1)
+	ut.NewHTTP(ul.New(user.Initialize(db, rbac, sec), log), v1, authMiddleware)
+	pt.NewHTTP(pl.New(password.Initialize(db, rbac, sec), log), v1, authMiddleware)
 
-	server.Start(e, &server.Config{
-		Port:                cfg.Server.Port,
-		ReadTimeoutSeconds:  cfg.Server.ReadTimeout,
-		WriteTimeoutSeconds: cfg.Server.WriteTimeout,
-		Debug:               cfg.Server.Debug,
-	})
+	// Every other request under /v1 needs authentication and is not found
+	v1.All("/*", authMiddleware, server.NotFoundHandler)
+	e.Use(server.NotFound)
+
+	server.Start(e, srvCfg)
 
 	return nil
 }

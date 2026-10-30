@@ -3,7 +3,7 @@ package query_test
 import (
 	"testing"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 
@@ -54,7 +54,7 @@ func TestList(t *testing.T) {
 			args: args{user: gorsk.AuthUser{
 				Role: gorsk.UserRole,
 			}},
-			wantErr: echo.ErrForbidden,
+			wantErr: fiber.ErrForbidden,
 		},
 	}
 	for _, tt := range cases {

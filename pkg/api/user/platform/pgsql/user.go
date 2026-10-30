@@ -7,7 +7,7 @@ import (
 	"github.com/go-pg/pg/v9"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 )
@@ -17,7 +17,7 @@ type User struct{}
 
 // Custom errors
 var (
-	ErrAlreadyExists = echo.NewHTTPError(http.StatusInternalServerError, "Username or email already exists.")
+	ErrAlreadyExists = fiber.NewError(http.StatusInternalServerError, "Username or email already exists.")
 )
 
 // Create creates a new user on database

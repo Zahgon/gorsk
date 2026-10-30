@@ -6,8 +6,9 @@ import (
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/password"
+	"github.com/ribice/gorsk/pkg/utl/server"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 // HTTP represents password http transport service
@@ -16,9 +17,9 @@ type HTTP struct {
 }
 
 // NewHTTP creates new password http service
-func NewHTTP(svc password.Service, er *echo.Group) {
+func NewHTTP(svc password.Service, r fiber.Router, mw fiber.Handler) {
 	h := HTTP{svc}
-	pr := er.Group("/password")
+	pr := r.Group("/password")
 
 	// swagger:operation PATCH /v1/password/{id} password pwChange
 	// ---
@@ -47,12 +48,13 @@ func NewHTTP(svc password.Service, er *echo.Group) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	pr.PATCH("/:id", h.change)
+	pr.Patch("/:id", mw, h.change)
+	pr.All("/:id", server.MethodNotAllowedHandler)
 }
 
 // Custom errors
 var (
-	ErrPasswordsNotMaching = echo.NewHTTPError(http.StatusBadRequest, "passwords do not match")
+	ErrPasswordsNotMaching = fiber.NewError(http.StatusBadRequest, "passwords do not match")
 )
 
 // Password change request
@@ -64,14 +66,14 @@ type changeReq struct {
 	NewPasswordConfirm string `json:"new_password_confirm" validate:"required"`
 }
 
-func (h *HTTP) change(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+func (h *HTTP) change(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return gorsk.ErrBadRequest
 	}
 
 	p := new(changeReq)
-	if err := c.Bind(p); err != nil {
+	if err := server.Bind(c, p); err != nil {
 		return err
 	}
 
@@ -83,5 +85,6 @@ func (h *HTTP) change(c echo.Context) error {
 		return err
 	}
 
-	return c.NoContent(http.StatusOK)
+	c.Status(http.StatusOK)
+	return nil
 }

@@ -8,7 +8,7 @@ import (
 
 // Improve tests
 func TestNew(t *testing.T) {
-	e := server.New()
+	e := server.New(&server.Config{})
 	if e == nil {
 		t.Errorf("Server should not be nil")
 	}

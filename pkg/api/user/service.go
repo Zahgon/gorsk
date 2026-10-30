@@ -3,7 +3,7 @@ package user
 import (
 	"github.com/go-pg/pg/v9"
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/user/platform/pgsql"
@@ -11,11 +11,11 @@ import (
 
 // Service represents user application interface
 type Service interface {
-	Create(echo.Context, gorsk.User) (gorsk.User, error)
-	List(echo.Context, gorsk.Pagination) ([]gorsk.User, error)
-	View(echo.Context, int) (gorsk.User, error)
-	Delete(echo.Context, int) error
-	Update(echo.Context, Update) (gorsk.User, error)
+	Create(*fiber.Ctx, gorsk.User) (gorsk.User, error)
+	List(*fiber.Ctx, gorsk.Pagination) ([]gorsk.User, error)
+	View(*fiber.Ctx, int) (gorsk.User, error)
+	Delete(*fiber.Ctx, int) error
+	Update(*fiber.Ctx, Update) (gorsk.User, error)
 }
 
 // New creates new user application service
@@ -52,8 +52,8 @@ type UDB interface {
 
 // RBAC represents role-based-access-control interface
 type RBAC interface {
-	User(echo.Context) gorsk.AuthUser
-	EnforceUser(echo.Context, int) error
-	AccountCreate(echo.Context, gorsk.AccessRole, int, int) error
-	IsLowerRole(echo.Context, gorsk.AccessRole) error
+	User(*fiber.Ctx) gorsk.AuthUser
+	EnforceUser(*fiber.Ctx, int) error
+	AccountCreate(*fiber.Ctx, gorsk.AccessRole, int, int) error
+	IsLowerRole(*fiber.Ctx, gorsk.AccessRole) error
 }

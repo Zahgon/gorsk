@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/user"
@@ -26,7 +26,7 @@ type LogService struct {
 const name = "user"
 
 // Create logging
-func (ls *LogService) Create(c echo.Context, req gorsk.User) (resp gorsk.User, err error) {
+func (ls *LogService) Create(c *fiber.Ctx, req gorsk.User) (resp gorsk.User, err error) {
 	defer func(begin time.Time) {
 		req.Password = "xxx-redacted-xxx"
 		ls.logger.Log(
@@ -43,7 +43,7 @@ func (ls *LogService) Create(c echo.Context, req gorsk.User) (resp gorsk.User, e
 }
 
 // List logging
-func (ls *LogService) List(c echo.Context, req gorsk.Pagination) (resp []gorsk.User, err error) {
+func (ls *LogService) List(c *fiber.Ctx, req gorsk.Pagination) (resp []gorsk.User, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
@@ -59,7 +59,7 @@ func (ls *LogService) List(c echo.Context, req gorsk.Pagination) (resp []gorsk.U
 }
 
 // View logging
-func (ls *LogService) View(c echo.Context, req int) (resp gorsk.User, err error) {
+func (ls *LogService) View(c *fiber.Ctx, req int) (resp gorsk.User, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
@@ -75,7 +75,7 @@ func (ls *LogService) View(c echo.Context, req int) (resp gorsk.User, err error)
 }
 
 // Delete logging
-func (ls *LogService) Delete(c echo.Context, req int) (err error) {
+func (ls *LogService) Delete(c *fiber.Ctx, req int) (err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
@@ -90,7 +90,7 @@ func (ls *LogService) Delete(c echo.Context, req int) (err error) {
 }
 
 // Update logging
-func (ls *LogService) Update(c echo.Context, req user.Update) (resp gorsk.User, err error) {
+func (ls *LogService) Update(c *fiber.Ctx, req user.Update) (resp gorsk.User, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,

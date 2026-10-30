@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/go-pg/pg/v9"
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/auth/platform/pgsql"
@@ -27,9 +27,9 @@ func Initialize(db *pg.DB, j TokenGenerator, sec Securer, rbac RBAC) Auth {
 
 // Service represents auth service interface
 type Service interface {
-	Authenticate(echo.Context, string, string) (gorsk.AuthToken, error)
-	Refresh(echo.Context, string) (string, error)
-	Me(echo.Context) (gorsk.User, error)
+	Authenticate(*fiber.Ctx, string, string) (gorsk.AuthToken, error)
+	Refresh(*fiber.Ctx, string) (string, error)
+	Me(*fiber.Ctx) (gorsk.User, error)
 }
 
 // Auth represents auth application service
@@ -62,5 +62,5 @@ type Securer interface {
 
 // RBAC represents role-based-access-control interface
 type RBAC interface {
-	User(echo.Context) gorsk.AuthUser
+	User(*fiber.Ctx) gorsk.AuthUser
 }

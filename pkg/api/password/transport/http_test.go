@@ -15,7 +15,7 @@ import (
 	"github.com/ribice/gorsk/pkg/utl/server"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,8 +50,8 @@ func TestChangePassword(t *testing.T) {
 			name: "Fail on RBAC",
 			req:  `{"new_password":"newpassw","old_password":"oldpassw", "new_password_confirm":"newpassw"}`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
-					return echo.ErrForbidden
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
+					return fiber.ErrForbidden
 				},
 			},
 			id:         "1",
@@ -61,7 +61,7 @@ func TestChangePassword(t *testing.T) {
 			name: "Success",
 			req:  `{"new_password":"newpassw","old_password":"oldpassw", "new_password_confirm":"newpassw"}`,
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				},
 			},
@@ -89,22 +89,15 @@ func TestChangePassword(t *testing.T) {
 		},
 	}
 
-	client := &http.Client{}
-
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			r := server.New()
+			r := server.New(&server.Config{})
 			rg := r.Group("")
-			transport.NewHTTP(password.New(nil, tt.udb, tt.rbac, tt.sec), rg)
-			ts := httptest.NewServer(r)
-			defer ts.Close()
-			path := ts.URL + "/password/" + tt.id
-			req, err := http.NewRequest("PATCH", path, bytes.NewBufferString(tt.req))
+			transport.NewHTTP(password.New(nil, tt.udb, tt.rbac, tt.sec), rg, next)
+			path := "/password/" + tt.id
+			req := httptest.NewRequest("PATCH", path, bytes.NewBufferString(tt.req))
 			req.Header.Set("Content-Type", "application/json")
-			if err != nil {
-				t.Fatal(err)
-			}
-			res, err := client.Do(req)
+			res, err := r.Test(req, -1)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -112,4 +105,9 @@ func TestChangePassword(t *testing.T) {
 			assert.Equal(t, tt.wantStatus, res.StatusCode)
 		})
 	}
+}
+
+// next lets the requests through to the handlers without authentication
+func next(c *fiber.Ctx) error {
+	return c.Next()
 }

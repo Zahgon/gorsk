@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 )
@@ -16,6 +16,6 @@ func List(u gorsk.AuthUser) (*gorsk.ListQuery, error) {
 	case u.Role == gorsk.LocationAdminRole:
 		return &gorsk.ListQuery{Query: "location_id = ?", ID: u.LocationID}, nil
 	default:
-		return nil, echo.ErrForbidden
+		return nil, fiber.ErrForbidden
 	}
 }

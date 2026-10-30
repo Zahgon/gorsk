@@ -6,24 +6,24 @@ import (
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/utl/middleware/auth"
 )
 
-func echoHandler(mw ...echo.MiddlewareFunc) *echo.Echo {
-	e := echo.New()
+func fiberHandler(mw ...fiber.Handler) *fiber.App {
+	app := fiber.New()
 	for _, v := range mw {
-		e.Use(v)
+		app.Use(v)
 	}
-	e.GET("/hello", hwHandler)
-	return e
+	app.Get("/hello", hwHandler)
+	return app
 }
 
-func hwHandler(c echo.Context) error {
-	return c.String(200, "Hello World")
+func hwHandler(c *fiber.Ctx) error {
+	return c.Status(200).SendString("Hello World")
 }
 
 type tokenParser struct {
@@ -64,16 +64,13 @@ func TestMWFunc(t *testing.T) {
 			wantStatus: http.StatusOK,
 		},
 	}
-	ts := httptest.NewServer(echoHandler(auth.Middleware(tokenParser{})))
-	defer ts.Close()
-	path := ts.URL + "/hello"
-	client := &http.Client{}
+	app := fiberHandler(auth.Middleware(tokenParser{}))
 
 	for name, tt := range cases {
 		t.Run(name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", path, nil)
+			req := httptest.NewRequest("GET", "/hello", nil)
 			req.Header.Set("Authorization", tt.header)
-			res, err := client.Do(req)
+			res, err := app.Test(req)
 			if err != nil {
 				t.Fatal("Cannot create http request")
 			}

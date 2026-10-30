@@ -6,8 +6,9 @@ import (
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/user"
+	"github.com/ribice/gorsk/pkg/utl/server"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 // HTTP represents user http service
@@ -16,7 +17,7 @@ type HTTP struct {
 }
 
 // NewHTTP creates new user http service
-func NewHTTP(svc user.Service, r *echo.Group) {
+func NewHTTP(svc user.Service, r fiber.Router, mw fiber.Handler) {
 	h := HTTP{svc}
 	ur := r.Group("/users")
 	// swagger:route POST /v1/users users userCreate
@@ -27,7 +28,7 @@ func NewHTTP(svc user.Service, r *echo.Group) {
 	//  401: err
 	//  403: errMsg
 	//  500: err
-	ur.POST("", h.create)
+	ur.Post("", mw, h.create)
 
 	// swagger:operation GET /v1/users users listUsers
 	// ---
@@ -55,7 +56,7 @@ func NewHTTP(svc user.Service, r *echo.Group) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	ur.GET("", h.list)
+	ur.Add(fiber.MethodGet, "", mw, h.list)
 
 	// swagger:operation GET /v1/users/{id} users getUser
 	// ---
@@ -80,7 +81,7 @@ func NewHTTP(svc user.Service, r *echo.Group) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	ur.GET("/:id", h.view)
+	ur.Add(fiber.MethodGet, "/:id", mw, h.view)
 
 	// swagger:operation PATCH /v1/users/{id} users userUpdate
 	// ---
@@ -109,7 +110,7 @@ func NewHTTP(svc user.Service, r *echo.Group) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	ur.PATCH("/:id", h.update)
+	ur.Patch("/:id", mw, h.update)
 
 	// swagger:operation DELETE /v1/users/{id} users userDelete
 	// ---
@@ -132,12 +133,14 @@ func NewHTTP(svc user.Service, r *echo.Group) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	ur.DELETE("/:id", h.delete)
+	ur.Delete("/:id", mw, h.delete)
+
+	ur.All("/:id", server.MethodNotAllowedHandler)
 }
 
 // Custom errors
 var (
-	ErrPasswordsNotMaching = echo.NewHTTPError(http.StatusBadRequest, "passwords do not match")
+	ErrPasswordsNotMaching = fiber.NewError(http.StatusBadRequest, "passwords do not match")
 )
 
 // User create request
@@ -155,10 +158,10 @@ type createReq struct {
 	RoleID     gorsk.AccessRole `json:"role_id" validate:"required"`
 }
 
-func (h HTTP) create(c echo.Context) error {
+func (h HTTP) create(c *fiber.Ctx) error {
 	r := new(createReq)
 
-	if err := c.Bind(r); err != nil {
+	if err := server.Bind(c, r); err != nil {
 
 		return err
 	}
@@ -186,7 +189,7 @@ func (h HTTP) create(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, usr)
+	return server.JSON(c, http.StatusOK, usr)
 }
 
 type listResponse struct {
@@ -194,9 +197,9 @@ type listResponse struct {
 	Page  int          `json:"page"`
 }
 
-func (h HTTP) list(c echo.Context) error {
+func (h HTTP) list(c *fiber.Ctx) error {
 	var req gorsk.PaginationReq
-	if err := c.Bind(&req); err != nil {
+	if err := server.Bind(c, &req); err != nil {
 		return err
 	}
 
@@ -206,11 +209,11 @@ func (h HTTP) list(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, listResponse{result, req.Page})
+	return server.JSON(c, http.StatusOK, listResponse{result, req.Page})
 }
 
-func (h HTTP) view(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+func (h HTTP) view(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return gorsk.ErrBadRequest
 	}
@@ -220,7 +223,7 @@ func (h HTTP) view(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, result)
+	return server.JSON(c, http.StatusOK, result)
 }
 
 // User update request
@@ -234,14 +237,14 @@ type updateReq struct {
 	Address   string `json:"address,omitempty"`
 }
 
-func (h HTTP) update(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+func (h HTTP) update(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return gorsk.ErrBadRequest
 	}
 
 	req := new(updateReq)
-	if err := c.Bind(req); err != nil {
+	if err := server.Bind(c, req); err != nil {
 		return err
 	}
 
@@ -258,11 +261,11 @@ func (h HTTP) update(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, usr)
+	return server.JSON(c, http.StatusOK, usr)
 }
 
-func (h HTTP) delete(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+func (h HTTP) delete(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return gorsk.ErrBadRequest
 	}
@@ -271,5 +274,6 @@ func (h HTTP) delete(c echo.Context) error {
 		return err
 	}
 
-	return c.NoContent(http.StatusOK)
+	c.Status(http.StatusOK)
+	return nil
 }

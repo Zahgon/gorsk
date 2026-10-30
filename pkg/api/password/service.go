@@ -3,7 +3,7 @@ package password
 import (
 	"github.com/go-pg/pg/v9"
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/password/platform/pgsql"
@@ -11,7 +11,7 @@ import (
 
 // Service represents password application interface
 type Service interface {
-	Change(echo.Context, int, string, string) error
+	Change(*fiber.Ctx, int, string, string) error
 }
 
 // New creates new password application service
@@ -52,5 +52,5 @@ type Securer interface {
 
 // RBAC represents role-based-access-control interface
 type RBAC interface {
-	EnforceUser(echo.Context, int) error
+	EnforceUser(*fiber.Ctx, int) error
 }

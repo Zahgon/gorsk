@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/ribice/gorsk/pkg/api/auth"
+	"github.com/ribice/gorsk/pkg/utl/server"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 // HTTP represents auth http service
@@ -14,7 +15,7 @@ type HTTP struct {
 }
 
 // NewHTTP creates new auth http service
-func NewHTTP(svc auth.Service, e *echo.Echo, mw echo.MiddlewareFunc) {
+func NewHTTP(svc auth.Service, r fiber.Router, mw fiber.Handler) {
 	h := HTTP{svc}
 	// swagger:route POST /login auth login
 	// Logs in user by username and password.
@@ -25,7 +26,7 @@ func NewHTTP(svc auth.Service, e *echo.Echo, mw echo.MiddlewareFunc) {
 	// 	403: err
 	//  404: errMsg
 	//  500: err
-	e.POST("/login", h.login)
+	r.Post("/login", h.login)
 	// swagger:operation GET /refresh/{token} auth refresh
 	// ---
 	// summary: Refreshes jwt token.
@@ -45,14 +46,14 @@ func NewHTTP(svc auth.Service, e *echo.Echo, mw echo.MiddlewareFunc) {
 	//     "$ref": "#/responses/err"
 	//   "500":
 	//     "$ref": "#/responses/err"
-	e.GET("/refresh/:token", h.refresh)
+	r.Add(fiber.MethodGet, "/refresh/:token", h.refresh)
 
 	// swagger:route GET /me auth meReq
 	// Gets user's info from session.
 	// responses:
 	//  200: userResp
 	//  500: err
-	e.GET("/me", h.me, mw)
+	r.Add(fiber.MethodGet, "/me", mw, h.me)
 }
 
 type credentials struct {
@@ -60,32 +61,32 @@ type credentials struct {
 	Password string `json:"password" validate:"required"`
 }
 
-func (h *HTTP) login(c echo.Context) error {
+func (h *HTTP) login(c *fiber.Ctx) error {
 	cred := new(credentials)
-	if err := c.Bind(cred); err != nil {
+	if err := server.Bind(c, cred); err != nil {
 		return err
 	}
 	r, err := h.svc.Authenticate(c, cred.Username, cred.Password)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, r)
+	return server.JSON(c, http.StatusOK, r)
 }
 
-func (h *HTTP) refresh(c echo.Context) error {
-	token, err := h.svc.Refresh(c, c.Param("token"))
+func (h *HTTP) refresh(c *fiber.Ctx) error {
+	token, err := h.svc.Refresh(c, c.Params("token"))
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, map[string]string{
+	return server.JSON(c, http.StatusOK, map[string]string{
 		"token": token,
 	})
 }
 
-func (h *HTTP) me(c echo.Context) error {
+func (h *HTTP) me(c *fiber.Ctx) error {
 	user, err := h.svc.Me(c)
 	if err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, user)
+	return server.JSON(c, http.StatusOK, user)
 }

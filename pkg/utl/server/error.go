@@ -5,12 +5,11 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator"
-
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 type customErrHandler struct {
-	e *echo.Echo
+	debug bool
 }
 
 var validationErrors = map[string]string{
@@ -26,7 +25,28 @@ func getVldErrorMsg(s string) string {
 	return " failed on " + s + " validation"
 }
 
-func (ce *customErrHandler) handler(err error, c echo.Context) {
+// errorText describes err the way it is reported in debug responses and request logs:
+// HTTP errors as "code=<status>, message=<message>", any other error by its own text.
+func errorText(err error) string {
+	switch e := err.(type) {
+	case *fiber.Error:
+		return fmt.Sprintf("code=%d, message=%s", e.Code, e.Message)
+	case *bindError:
+		return fmt.Sprintf("code=%d, message=%s", http.StatusBadRequest, e.message)
+	}
+	return err.Error()
+}
+
+func (ce *customErrHandler) handler(c *fiber.Ctx, err error) error {
+	if c.Locals(requestURLKey) == nil {
+		// the server rejected the request before handling it
+		code := http.StatusBadRequest
+		if e, ok := err.(*fiber.Error); ok {
+			code = e.Code
+		}
+		return plainError(c, code, "")
+	}
+
 	var (
 		code = http.StatusInternalServerError
 		msg  interface{}
@@ -36,22 +56,22 @@ func (ce *customErrHandler) handler(err error, c echo.Context) {
 		Message interface{} `json:"message"`
 	}
 
-	if ce.e.Debug {
-		msg = err.Error()
-		switch err.(type) {
-		case *echo.HTTPError:
-			code = err.(*echo.HTTPError).Code
-		case validator.ValidationErrors:
+	if ce.debug {
+		msg = errorText(err)
+		switch e := err.(type) {
+		case *fiber.Error:
+			code = e.Code
+		case *bindError, validator.ValidationErrors:
 			code = http.StatusBadRequest
 		}
 	} else {
 		switch e := err.(type) {
-		case *echo.HTTPError:
+		case *fiber.Error:
 			code = e.Code
 			msg = e.Message
-			if e.Internal != nil {
-				msg = fmt.Sprintf("%v, %v", err, e.Internal)
-			}
+		case *bindError:
+			code = http.StatusBadRequest
+			msg = fmt.Sprintf("%v, %v", errorText(e), e.internal)
 		case validator.ValidationErrors:
 			var errMsg []string
 			for _, v := range e {
@@ -68,14 +88,9 @@ func (ce *customErrHandler) handler(err error, c echo.Context) {
 	}
 
 	// Send response
-	if !c.Response().Committed {
-		if c.Request().Method == "HEAD" {
-			err = c.NoContent(code)
-		} else {
-			err = c.JSON(code, msg)
-		}
-		if err != nil {
-			ce.e.Logger.Error(err)
-		}
+	if c.Method() == fiber.MethodHead {
+		c.Status(code)
+		return nil
 	}
+	return JSON(c, code, msg)
 }

@@ -1,7 +1,7 @@
 package gorsk
 
 import (
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 )
 
 // AuthToken holds authentication token details with refresh token
@@ -17,11 +17,11 @@ type RefreshToken struct {
 
 // RBACService represents role-based access control service interface
 type RBACService interface {
-	User(echo.Context) AuthUser
-	EnforceRole(echo.Context, AccessRole) error
-	EnforceUser(echo.Context, int) error
-	EnforceCompany(echo.Context, int) error
-	EnforceLocation(echo.Context, int) error
-	AccountCreate(echo.Context, AccessRole, int, int) error
-	IsLowerRole(echo.Context, AccessRole) error
+	User(*fiber.Ctx) AuthUser
+	EnforceRole(*fiber.Ctx, AccessRole) error
+	EnforceUser(*fiber.Ctx, int) error
+	EnforceCompany(*fiber.Ctx, int) error
+	EnforceLocation(*fiber.Ctx, int) error
+	AccountCreate(*fiber.Ctx, AccessRole, int, int) error
+	IsLowerRole(*fiber.Ctx, AccessRole) error
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/go-pg/pg/v9/orm"
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/user"
@@ -16,7 +16,7 @@ import (
 
 func TestCreate(t *testing.T) {
 	type args struct {
-		c   echo.Context
+		c   *fiber.Ctx
 		req gorsk.User
 	}
 	cases := []struct {
@@ -30,7 +30,7 @@ func TestCreate(t *testing.T) {
 	}{{
 		name: "Fail on is lower role",
 		rbac: &mock.RBAC{
-			AccountCreateFn: func(echo.Context, gorsk.AccessRole, int, int) error {
+			AccountCreateFn: func(*fiber.Ctx, gorsk.AccessRole, int, int) error {
 				return gorsk.ErrGeneric
 			}},
 		wantErr: true,
@@ -60,7 +60,7 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				AccountCreateFn: func(echo.Context, gorsk.AccessRole, int, int) error {
+				AccountCreateFn: func(*fiber.Ctx, gorsk.AccessRole, int, int) error {
 					return nil
 				}},
 			sec: &mock.Secure{
@@ -92,7 +92,7 @@ func TestCreate(t *testing.T) {
 
 func TestView(t *testing.T) {
 	type args struct {
-		c  echo.Context
+		c  *fiber.Ctx
 		id int
 	}
 	cases := []struct {
@@ -107,7 +107,7 @@ func TestView(t *testing.T) {
 			name: "Fail on RBAC",
 			args: args{id: 5},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return gorsk.ErrGeneric
 				}},
 			wantErr: gorsk.ErrGeneric,
@@ -126,7 +126,7 @@ func TestView(t *testing.T) {
 				Username:  "JohnDoe",
 			},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			udb: &mockdb.User{
@@ -159,7 +159,7 @@ func TestView(t *testing.T) {
 
 func TestList(t *testing.T) {
 	type args struct {
-		c   echo.Context
+		c   *fiber.Ctx
 		pgn gorsk.Pagination
 	}
 	cases := []struct {
@@ -178,7 +178,7 @@ func TestList(t *testing.T) {
 			}},
 			wantErr: true,
 			rbac: &mock.RBAC{
-				UserFn: func(c echo.Context) gorsk.AuthUser {
+				UserFn: func(c *fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{
 						ID:         1,
 						CompanyID:  2,
@@ -193,7 +193,7 @@ func TestList(t *testing.T) {
 				Offset: 200,
 			}},
 			rbac: &mock.RBAC{
-				UserFn: func(c echo.Context) gorsk.AuthUser {
+				UserFn: func(c *fiber.Ctx) gorsk.AuthUser {
 					return gorsk.AuthUser{
 						ID:         1,
 						CompanyID:  2,
@@ -266,7 +266,7 @@ func TestList(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	type args struct {
-		c  echo.Context
+		c  *fiber.Ctx
 		id int
 	}
 	cases := []struct {
@@ -309,7 +309,7 @@ func TestDelete(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				IsLowerRoleFn: func(echo.Context, gorsk.AccessRole) error {
+				IsLowerRoleFn: func(*fiber.Ctx, gorsk.AccessRole) error {
 					return gorsk.ErrGeneric
 				}},
 			wantErr: gorsk.ErrGeneric,
@@ -339,7 +339,7 @@ func TestDelete(t *testing.T) {
 				},
 			},
 			rbac: &mock.RBAC{
-				IsLowerRoleFn: func(echo.Context, gorsk.AccessRole) error {
+				IsLowerRoleFn: func(*fiber.Ctx, gorsk.AccessRole) error {
 					return nil
 				}},
 		},
@@ -357,7 +357,7 @@ func TestDelete(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	type args struct {
-		c   echo.Context
+		c   *fiber.Ctx
 		upd user.Update
 	}
 	cases := []struct {
@@ -374,7 +374,7 @@ func TestUpdate(t *testing.T) {
 				ID: 1,
 			}},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return gorsk.ErrGeneric
 				}},
 			wantErr: gorsk.ErrGeneric,
@@ -385,7 +385,7 @@ func TestUpdate(t *testing.T) {
 				ID: 1,
 			}},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			wantErr: gorsk.ErrGeneric,
@@ -423,7 +423,7 @@ func TestUpdate(t *testing.T) {
 				Phone:     "234567",
 			}},
 			rbac: &mock.RBAC{
-				EnforceUserFn: func(c echo.Context, id int) error {
+				EnforceUserFn: func(c *fiber.Ctx, id int) error {
 					return nil
 				}},
 			wantData: gorsk.User{

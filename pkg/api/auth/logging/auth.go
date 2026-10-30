@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	"github.com/labstack/echo"
+	"github.com/gofiber/fiber/v2"
 
 	"github.com/ribice/gorsk"
 	"github.com/ribice/gorsk/pkg/api/auth"
@@ -26,7 +26,7 @@ type LogService struct {
 const name = "auth"
 
 // Authenticate logging
-func (ls *LogService) Authenticate(c echo.Context, user, password string) (resp gorsk.AuthToken, err error) {
+func (ls *LogService) Authenticate(c *fiber.Ctx, user, password string) (resp gorsk.AuthToken, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
@@ -41,7 +41,7 @@ func (ls *LogService) Authenticate(c echo.Context, user, password string) (resp 
 }
 
 // Refresh logging
-func (ls *LogService) Refresh(c echo.Context, req string) (token string, err error) {
+func (ls *LogService) Refresh(c *fiber.Ctx, req string) (token string, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
@@ -57,7 +57,7 @@ func (ls *LogService) Refresh(c echo.Context, req string) (token string, err err
 }
 
 // Me logging
-func (ls *LogService) Me(c echo.Context) (resp gorsk.User, err error) {
+func (ls *LogService) Me(c *fiber.Ctx) (resp gorsk.User, err error) {
 	defer func(begin time.Time) {
 		ls.logger.Log(
 			c,
